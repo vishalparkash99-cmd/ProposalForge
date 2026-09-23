@@ -4,12 +4,26 @@ import os
 import time
 
 # Page Setup & Modern UI Styling
-st.set_page_config(page_title="AI Proposal & RFP Engine", layout="wide", page_icon="⚡")
+st.set_page_config(
+    page_title="AI Proposal & RFP Engine",
+    layout="wide",
+    page_icon="⚡",
+    menu_items={"Get help": None, "Report a bug": None, "About": None}
+)
 
 # Custom CSS for Sleek Theme
 st.markdown("""
     <style>
     .main { background-color: #0f172a; color: #f8fafc; }
+
+    /* White-label: hide all Streamlit branding & chrome */
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
+    [data-testid="stHeader"] { display: none !important; }
+    [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stFooter"] { display: none !important; }
+    [data-testid="stAppDeployButton"] { display: none !important; }
+    header[data-testid="stHeader"] .decoration { display: none !important; }
     .stButton>button {
         background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
         color: white;
