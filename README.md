@@ -1,8 +1,8 @@
-# ⚡ AI Proposal & RFP Engine (`vercel-version`)
+# ⚡ AI Proposal & RFP Engine
 
 A Streamlit app that converts raw client RFPs and emails into high-converting enterprise proposals using any OpenAI-compatible AI model (Claude, GPT, Llama) via OpenRouter. Includes a built-in "WordSpinner" humanizer that rewrites AI-sounding text into a natural enterprise tone.
 
-> **Whitelabel / production build:** This branch (`vercel-version`) is a ready-to-deploy build for a specific company. The API key and the list of working models come from **environment variables / Streamlit secrets** — there is **no API key field**, **no model loading button**, and **no dropdown to load models** in the UI. Users only enter the client input and generate.
+> **Whitelabel / production build:** This is a production build for a specific company. The API key and the list of working models come from **environment variables / Streamlit secrets** — there is **no API key field**, **no model loading button**, and **no dropdown to load models** in the UI. Users only enter the client input and generate. All Streamlit branding (menu, footer, GitHub links) is hidden.
 
 ## Features
 
@@ -48,17 +48,6 @@ streamlit run main.py
 ```
 
 Your browser will open automatically at `http://localhost:8501`.
-
-## Deploy (Vercel)
-
-1. Push this branch to your Git provider and import the repo in Vercel.
-2. Set the environment variables in **Project → Settings → Environment Variables**:
-   - `OPENROUTER_API_KEY` — your OpenRouter key (**required**)
-   - `OPENROUTER_BASE_URL` — optional, defaults to OpenRouter
-   - `MODELS` — optional comma-separated list of working models
-3. Deploy. The key is only read from the environment; it never appears in the UI and is never stored on disk.
-
-> Note: Streamlit is a long-running web server. On Vercel, ensure the deployment uses a persistent/streaming-compatible setup (or deploy to a host that supports long-lived Python servers such as Streamlit Community Cloud if latency/timeouts are an issue).
 
 ## Usage
 
