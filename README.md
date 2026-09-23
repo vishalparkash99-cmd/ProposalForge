@@ -1,14 +1,14 @@
 # ⚡ AI Proposal & RFP Engine
 
-A Streamlit app that converts raw client RFPs and emails into high-converting enterprise proposals using any OpenAI-compatible AI model (Claude, GPT, Llama) via OpenRouter. Includes a built-in "WordSpinner" humanizer that rewrites AI-sounding text into a natural enterprise tone.
+A Streamlit app that converts raw client RFPs and emails into high-converting enterprise proposals using Google Gemini's free-tier models. Includes a built-in "WordSpinner" humanizer that rewrites AI-sounding text into a natural enterprise tone.
 
 > **Whitelabel / production build:** This is a production build for a specific company. The API key and the list of working models come from **environment variables / Streamlit secrets** — there is **no API key field**, **no model loading button**, and **no dropdown to load models** in the UI. Users only enter the client input and generate. All Streamlit branding (menu, footer, GitHub links) is hidden.
 
 ## Features
 
 - Paste any client RFP / email and generate a complete enterprise proposal
-- API key read automatically from `OPENROUTER_API_KEY` (env var or Streamlit secret) — no manual entry
-- Pre-populated list of working models in a dropdown (no "Load Models" button)
+- API key read automatically from `GEMINI_API_KEY` (env var or Streamlit secret) — no manual entry
+- Pre-populated list of free Gemini models in a dropdown (no "Load Models" button)
 - Configurable company portfolio & strengths context
 - WordSpinner humanizer toggle with adjustable intensity (Standard B2B, Conversational Enterprise, Ultra-Natural / Direct)
 - Selectable core focus capabilities to steer the proposal
@@ -19,7 +19,7 @@ A Streamlit app that converts raw client RFPs and emails into high-converting en
 ## Prerequisites
 
 - Python 3.12+
-- An [OpenRouter API key](https://openrouter.ai/keys)
+- A free [Google Gemini API key](https://aistudio.google.com/apikey) (free tier — no credit card needed)
 
 ## Setup & Run (Local)
 
@@ -38,10 +38,10 @@ source env/bin/activate    # Linux / macOS
 pip install -r requirements.txt
 
 # 5. Set the API key (via env var)
-export OPENROUTER_API_KEY="sk-or-v1-..."
+export GEMINI_API_KEY="your-gemini-api-key"
 # OPTIONAL overrides:
-# export OPENROUTER_BASE_URL="https://openrouter.ai/api/v1"
-# export MODELS="anthropic/claude-3.5-sonnet,openai/gpt-4o-mini,meta-llama/llama-3.1-70b-instruct"
+# export API_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai/"
+# export MODELS="gemini-3.5-flash,gemini-3.5-flash-lite,gemini-2.5-flash"
 
 # 6. Launch the app
 streamlit run main.py
@@ -86,6 +86,6 @@ ProposalForge/
 
 ## Notes
 
-- Requires an internet connection to reach the configured API endpoint.
-- The API key is read from `OPENROUTER_API_KEY` (env var or Streamlit secret) only; it is never stored on disk.
-- If `MODELS` is not set, the pre-populated dropdown shows a curated default set (Claude 3.5 Sonnet, GPT-4o mini, Llama 3.1 70B).
+- Requires an internet connection to reach the Gemini API.
+- The API key is read from `GEMINI_API_KEY` (env var or Streamlit secret) only; it is never stored on disk.
+- Gemini's free tier includes `gemini-3.5-flash`, `gemini-3.5-flash-lite`, and `gemini-2.5-flash` with a generous daily quota — effectively unlimited for proposal generation. If `MODELS` is not set, these defaults are shown in the dropdown.

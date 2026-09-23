@@ -50,27 +50,32 @@ st.info(
 )
 
 # Read API key from environment / Streamlit secrets (no manual entry)
-api_key = os.environ.get("OPENROUTER_API_KEY")
+api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
 if not api_key:
     try:
-        api_key = st.secrets.get("OPENROUTER_API_KEY")
+        api_key = st.secrets.get("GEMINI_API_KEY") or st.secrets.get("OPENROUTER_API_KEY")
     except Exception:
         api_key = None
-base_url = os.environ.get("OPENROUTER_BASE_URL") or "https://openrouter.ai/api/v1"
+base_url = (
+    os.environ.get("API_BASE_URL")
+    or os.environ.get("OPENROUTER_BASE_URL")
+    or "https://generativelanguage.googleapis.com/v1beta/openai/"
+)
 
 if not api_key:
     st.error(
-        "❌ Missing API key. Set the `OPENROUTER_API_KEY` environment variable "
+        "❌ Missing API key. Set the `GEMINI_API_KEY` environment variable "
         "(or Streamlit secret) before running this app."
     )
     st.stop()
 
 # Pre-populated working models (no "Load Models" button / live fetch).
-# Override via the MODELS env var as a comma-separated list if needed.
+# Defaults to free Gemini tier models; override via the MODELS env var
+# as a comma-separated list if needed.
 default_models = [
-    "anthropic/claude-3.5-sonnet",
-    "openai/gpt-4o-mini",
-    "meta-llama/llama-3.1-70b-instruct",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-2.5-flash",
 ]
 models_env = os.environ.get("MODELS")
 available_models = [m.strip() for m in models_env.split(",")] if models_env else default_models
