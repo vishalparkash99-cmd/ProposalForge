@@ -1,5 +1,6 @@
 import streamlit as st
 import openai
+import os
 import time
 
 # Page Setup & Modern UI Styling
@@ -27,28 +28,42 @@ st.markdown("""
 st.title("⚡ AI Proposal & RFP Engine")
 st.caption("Convert Raw Client RFPs into High-Converting Enterprise Proposals.")
 
+# Privacy / No-History Notice
+st.info(
+    "🔒 **Privacy Notice:** Your client inputs and generated proposals are **not saved anywhere**. "
+    "Everything lives only in this browser session and **will be wiped on refresh** — there is **no history**. "
+    "**Copy or download your proposal as a `.txt` file** before refreshing the page."
+)
+
+# Read API key from environment / Streamlit secrets (no manual entry)
+api_key = os.environ.get("OPENROUTER_API_KEY")
+if not api_key:
+    try:
+        api_key = st.secrets.get("OPENROUTER_API_KEY")
+    except Exception:
+        api_key = None
+base_url = os.environ.get("OPENROUTER_BASE_URL") or "https://openrouter.ai/api/v1"
+
+if not api_key:
+    st.error(
+        "❌ Missing API key. Set the `OPENROUTER_API_KEY` environment variable "
+        "(or Streamlit secret) before running this app."
+    )
+    st.stop()
+
+# Pre-populated working models (no "Load Models" button / live fetch).
+# Override via the MODELS env var as a comma-separated list if needed.
+default_models = [
+    "anthropic/claude-3.5-sonnet",
+    "openai/gpt-4o-mini",
+    "meta-llama/llama-3.1-70b-instruct",
+]
+models_env = os.environ.get("MODELS")
+available_models = [m.strip() for m in models_env.split(",")] if models_env else default_models
+
 # Sidebar - Configuration
 st.sidebar.header("⚙️ Configuration")
-api_key = st.sidebar.text_input("API Key", type="password")
-base_url = st.sidebar.text_input("API Base URL", value="https://openrouter.ai/api/v1")
-
-fallback_models = ["anthropic/claude-3.5-sonnet", "openai/gpt-4o-mini", "meta-llama/llama-3.1-70b-instruct"]
-
-if "available_models" not in st.session_state:
-    st.session_state.available_models = fallback_models
-
-if st.sidebar.button("🔄 Load Models"):
-    if not api_key:
-        st.sidebar.warning("Enter an API key first.")
-    else:
-        with st.spinner("Fetching available models..."):
-            try:
-                client = openai.OpenAI(base_url=base_url, api_key=api_key)
-                st.session_state.available_models = sorted(m.id for m in client.models.list().data)
-            except Exception as e:
-                st.sidebar.error(f"Could not fetch models: {str(e)}")
-
-model_choice = st.sidebar.selectbox("Choose AI Engine", st.session_state.available_models)
+model_choice = st.sidebar.selectbox("Choose AI Engine", available_models)
 
 # WORD SPINNER / HUMANIZER TOGGLE
 st.sidebar.markdown("---")
@@ -91,9 +106,7 @@ with col1:
 with col2:
     st.subheader("2. Generated Proposal Output")
     if generate_btn:
-        if not api_key:
-            st.error("Please enter your API key in the sidebar.")
-        elif not rfp_text:
+        if not rfp_text:
             st.warning("Please paste client requirements first.")
         else:
             with st.spinner("Step 1: Analyzing RFP & Building Proposal Architecture..."):

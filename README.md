@@ -1,17 +1,19 @@
-# ⚡ AI Proposal & RFP Engine
+# ⚡ AI Proposal & RFP Engine (`vercel-version`)
 
 A Streamlit app that converts raw client RFPs and emails into high-converting enterprise proposals using any OpenAI-compatible AI model (Claude, GPT, Llama) via OpenRouter. Includes a built-in "WordSpinner" humanizer that rewrites AI-sounding text into a natural enterprise tone.
+
+> **Whitelabel / production build:** This branch (`vercel-version`) is a ready-to-deploy build for a specific company. The API key and the list of working models come from **environment variables / Streamlit secrets** — there is **no API key field**, **no model loading button**, and **no dropdown to load models** in the UI. Users only enter the client input and generate.
 
 ## Features
 
 - Paste any client RFP / email and generate a complete enterprise proposal
-- Live model list fetched from your API provider, or pick from built-in fallbacks
-- Configurable API Base URL (works with OpenRouter or any OpenAI-compatible endpoint)
-- Dynamic model loading with a single click
+- API key read automatically from `OPENROUTER_API_KEY` (env var or Streamlit secret) — no manual entry
+- Pre-populated list of working models in a dropdown (no "Load Models" button)
 - Configurable company portfolio & strengths context
 - WordSpinner humanizer toggle with adjustable intensity (Standard B2B, Conversational Enterprise, Ultra-Natural / Direct)
 - Selectable core focus capabilities to steer the proposal
 - Download the generated proposal as a `.txt` file
+- **No data storage:** client inputs and proposals are never saved; everything is wiped on refresh (no history)
 - Dark, modern UI theme
 
 ## Prerequisites
@@ -19,7 +21,7 @@ A Streamlit app that converts raw client RFPs and emails into high-converting en
 - Python 3.12+
 - An [OpenRouter API key](https://openrouter.ai/keys)
 
-## Setup & Run
+## Setup & Run (Local)
 
 ```bash
 # 1. Clone or navigate into the project
@@ -29,25 +31,48 @@ cd ProposalForge
 python3 -m venv env
 
 # 3. Activate it
-source env/bin/activate        # Linux / macOS
-# .\env\Scripts\activate      # Windows (PowerShell)
+source env/bin/activate    # Linux / macOS
+# .\env\Scripts\activate  # Windows (PowerShell)
 
 # 4. Install dependencies
-pip install streamlit openai
+pip install -r requirements.txt
 
-# 5. Launch the app
+# 5. Set the API key (via env var)
+export OPENROUTER_API_KEY="sk-or-v1-..."
+# OPTIONAL overrides:
+# export OPENROUTER_BASE_URL="https://openrouter.ai/api/v1"
+# export MODELS="anthropic/claude-3.5-sonnet,openai/gpt-4o-mini,meta-llama/llama-3.1-70b-instruct"
+
+# 6. Launch the app
 streamlit run main.py
 ```
 
-That's it. Your browser will open automatically at `http://localhost:8501`.
+Your browser will open automatically at `http://localhost:8501`.
+
+## Deploy (Vercel)
+
+1. Push this branch to your Git provider and import the repo in Vercel.
+2. Set the environment variables in **Project → Settings → Environment Variables**:
+   - `OPENROUTER_API_KEY` — your OpenRouter key (**required**)
+   - `OPENROUTER_BASE_URL` — optional, defaults to OpenRouter
+   - `MODELS` — optional comma-separated list of working models
+3. Deploy. The key is only read from the environment; it never appears in the UI and is never stored on disk.
+
+> Note: Streamlit is a long-running web server. On Vercel, ensure the deployment uses a persistent/streaming-compatible setup (or deploy to a host that supports long-lived Python servers such as Streamlit Community Cloud if latency/timeouts are an issue).
 
 ## Usage
 
-1. In the sidebar, enter your **API key** (leave the Base URL as the OpenRouter default unless you use a different provider).
-2. Optionally click **🔄 Load Models** to fetch the live model list, then pick an AI engine.
+1. The API key is already configured server-side — no key entry needed.
+2. Pick an AI engine from the pre-populated dropdown.
 3. Configure the **WordSpinner** humanizer settings and review/update the company context.
 4. In the main panel, enter the client name, paste the RFP/requirements, select the core capabilities, and click **🚀 Generate Enterprise Proposal**.
-5. The structured proposal appears on the right — copy it or download it as a `.txt` file.
+5. The structured proposal appears on the right — **copy it or download it as a `.txt` file**. Nothing is saved, so be sure to save before refreshing.
+
+## No-Data-Storage Policy
+
+- Client inputs and generated proposals are **not stored** on the server, in a database, or in cookies.
+- Data lives only in the current browser session and **is wiped on refresh**.
+- There is **no history** feature. Always copy or download the output `.txt` before leaving the page.
 
 ## How It Works
 
@@ -63,13 +88,15 @@ The app injects a Principal-Enterprise-Architect prompt (plus optional anti-buzz
 
 ```
 ProposalForge/
-├── main.py          # Streamlit app entry point
-├── env/             # Local Python virtual environment (not required to commit)
+├── main.py            # Streamlit app entry point (env-driven API key)
+├── requirements.txt   # Python dependencies
+├── .env.example       # Environment variable reference
+├── env/               # Local Python virtual environment (not committed)
 └── README.md
 ```
 
 ## Notes
 
 - Requires an internet connection to reach the configured API endpoint.
-- The API key is entered at runtime in the UI only; it is never stored on disk.
-- If the model list hasn't been loaded from the API, a set of fallback models (Claude, GPT-4o mini, Llama 3.1) is shown for selection.
+- The API key is read from `OPENROUTER_API_KEY` (env var or Streamlit secret) only; it is never stored on disk.
+- If `MODELS` is not set, the pre-populated dropdown shows a curated default set (Claude 3.5 Sonnet, GPT-4o mini, Llama 3.1 70B).
