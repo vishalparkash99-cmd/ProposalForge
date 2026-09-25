@@ -19,6 +19,7 @@ def main() -> None:
         """
         <style>
         .main { background-color: #0f172a; color: #f8fafc; }
+        ._profileContainer_gzau3_53, ._container_gzau3_1 { display: none; }
 
         /* White-label: hide all Streamlit branding & chrome */
         #MainMenu, [data-testid="stMainMenu"] { visibility: hidden; }
