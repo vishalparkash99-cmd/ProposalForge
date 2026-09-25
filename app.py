@@ -97,7 +97,7 @@ def main() -> None:
 
     with col1:
         st.subheader("1. Input Client Requirements")
-        client_name = st.text_input("Client Company Name", value="Apex Logistics Global")
+        client_name = st.text_input("Client Company Name", placeholder="Client Company Name")
         rfp_text = st.text_area(
             "Paste RFP / Client Email Here",
             height=280,
