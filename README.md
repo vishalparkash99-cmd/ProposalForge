@@ -1,91 +1,178 @@
-# ⚡ AI Proposal & RFP Engine
+# ProposalForge
 
-A Streamlit app that converts raw client RFPs and emails into high-converting enterprise proposals using Google Gemini's free-tier models. Includes a built-in "WordSpinner" humanizer that rewrites AI-sounding text into a natural enterprise tone.
+ProposalForge is a Streamlit workspace for turning client RFPs and email requests into structured enterprise proposals. It combines an OpenAI-compatible model request, a strict proposal schema, deterministic WordSpinner review, and formatted Word export.
 
-> **Whitelabel / production build:** This is a production build for a specific company. The API key and the list of working models come from **environment variables / Streamlit secrets** — there is **no API key field**, **no model loading button**, and **no dropdown to load models** in the UI. Users only enter the client input and generate. All Streamlit branding (menu, footer, GitHub links) is hidden.
+![Illustrative ProposalForge interface preview](docs/ui-preview.svg)
 
-## Features
+## What it does
 
-- Paste any client RFP / email and generate a complete enterprise proposal
-- API key read automatically from `GEMINI_API_KEY` (env var or Streamlit secret) — no manual entry
-- Pre-populated list of free Gemini models in a dropdown (no "Load Models" button)
-- Configurable company portfolio & strengths context
-- WordSpinner humanizer toggle with adjustable intensity (Standard B2B, Conversational Enterprise, Ultra-Natural / Direct)
-- Selectable core focus capabilities to steer the proposal
-- Download the generated proposal as a `.txt` file
-- **No data storage:** client inputs and proposals are never saved; everything is wiped on refresh (no history)
-- Dark, modern UI theme
+- Accepts a client name, RFP text, capability selections, and company context.
+- Generates five proposal sections through a required `submit_proposal` tool call.
+- Validates the model response against a strict schema before displaying or exporting it.
+- Flags dictionary buzzwords case-insensitively with sentence and source locations.
+- Shows a before/after review diff without silently changing the proposal.
+- Supports an injectable sentence-level rewriter for targeted humanization.
+- Creates a branded `.docx` file with a cover page, headings, bullets, page breaks, and document metadata.
+- Keeps configuration in environment variables or Streamlit secrets, with a session-only API-key fallback.
 
-## Prerequisites
+## Proposal structure
 
-- Python 3.12+
-- A free [Google Gemini API key](https://aistudio.google.com/apikey) (free tier — no credit card needed)
+Every successful generation contains these required fields:
 
-## Setup & Run (Local)
+1. `executive_summary` — problem breakdown and executive summary
+2. `proposed_solution` — proposed solution and AI agent architecture
+3. `pilot_roadmap` — four-week pilot roadmap and key deliverables
+4. `why_our_company` — company strengths and fit
+5. `next_steps` — clear next actions
 
-```bash
-# 1. Clone or navigate into the project
-cd ProposalForge
+The provider must return the fields through the strict `submit_proposal` function tool. A missing tool call, invalid JSON, missing field, or empty field is treated as a malformed response.
 
-# 2. Create a virtual environment
-python3 -m venv env
+## WordSpinner
 
-# 3. Activate it
-source env/bin/activate    # Linux / macOS
-# .\env\Scripts\activate  # Windows (PowerShell)
+WordSpinner uses a deterministic dictionary rather than a probabilistic rewrite pass. The default UI runs it in review mode: it reports every match, its sentence, and its line and column, while leaving the proposal unchanged.
 
-# 4. Install dependencies
-pip install -r requirements.txt
+Illustrative review diff:
 
-# 5. Set the API key (via env var)
-export GEMINI_API_KEY="your-gemini-api-key"
-# OPTIONAL overrides:
-# export API_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai/"
-# export MODELS="gemini-3.5-flash,gemini-3.5-flash-lite,gemini-2.5-flash"
-
-# 6. Launch the app
-streamlit run main.py
+```diff
+- We will leverage a robust, best-of-breed solution to unlock the potential of our operations.
++ We will run a focused pilot to improve routing visibility and response time.
 ```
 
-Your browser will open automatically at `http://localhost:8501`.
+The default application is intentionally review-first. Code that wants automatic replacement can inject a rewriter:
+
+```python
+from wordspinner import WordSpinner
+
+spinner = WordSpinner(rewriter=lambda sentence, hits: sentence.replace("leverage", "use"))
+result = spinner.spin(proposal_text)
+```
+
+The rewriter is called only for sentences containing matches, and it may return `None` to leave a sentence unchanged.
+
+## Architecture
+
+```text
+                         browser / Streamlit
+                                  |
+                                 app.py
+                                  |
+                       proposal_pipeline.py
+                         /       |        \
+                prompts.py  llm_client.py  export.py
+                    |            |              |
+          structured prompt   OpenAI API   python-docx (.docx)
+                                 |
+                         proposal_schema.py
+                    strict submit_proposal validation
+                                 |
+                         wordspinner.py
+                    deterministic review and rewrite API
+
+config.py and .env provide provider settings and company context.
+```
+
+The modules are intentionally separated so prompt construction, provider access, validation, review, and export can be tested or replaced independently of the Streamlit UI.
+
+## Requirements
+
+- Python 3.12+
+- An API key for an OpenAI-compatible provider
+- An internet connection for model requests
+
+The default configuration targets the Gemini OpenAI-compatible endpoint. OpenRouter can be selected through the corresponding environment variables.
+
+## Local setup
+
+From the repository root:
+
+```bash
+python3.12 -m venv env
+source env/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+cp .env.example .env
+```
+
+Edit `.env` and set a provider key:
+
+```dotenv
+GEMINI_API_KEY=replace-with-your-key
+```
+
+For OpenRouter, use:
+
+```dotenv
+OPENROUTER_API_KEY=replace-with-your-key
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+MODELS=your-compatible-model
+```
+
+Start the application:
+
+```bash
+streamlit run app.py
+```
+
+`streamlit run main.py` remains supported as a compatibility entry point. Streamlit serves the app at `http://localhost:8501` by default.
+
+## Configuration
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | Primary provider key | — |
+| `OPENROUTER_API_KEY` | Alternate provider key | — |
+| `API_BASE_URL` | OpenAI-compatible API base URL | Gemini endpoint |
+| `OPENROUTER_BASE_URL` | OpenRouter base URL | OpenRouter endpoint |
+| `MODELS` | Comma-separated model choices | Gemini defaults |
+| `COMPANY_CONTEXT` | Company capabilities and proof points | Built-in profile |
+
+The app also checks `GEMINI_API_KEY` and `OPENROUTER_API_KEY` through Streamlit secrets. If neither source provides a key, the sidebar offers a password-style field that is held only for the current Streamlit session and is not written to disk.
 
 ## Usage
 
-1. The API key is already configured server-side — no key entry needed.
-2. Pick an AI engine from the pre-populated dropdown.
-3. Configure the **WordSpinner** humanizer settings and review/update the company context.
-4. In the main panel, enter the client name, paste the RFP/requirements, select the core capabilities, and click **🚀 Generate Enterprise Proposal**.
-5. The structured proposal appears on the right — **copy it or download it as a `.txt` file**. Nothing is saved, so be sure to save before refreshing.
+1. Start the app and provide a key through `.env`, Streamlit secrets, or the session-only sidebar field.
+2. Choose a model and configure company context.
+3. Paste the client RFP or email and select the relevant capabilities.
+4. Generate the proposal.
+5. Review WordSpinner hits and the structured sections.
+6. Copy the final text or download the generated `.docx` file.
 
-## No-Data-Storage Policy
+The app does not persist RFPs or generated proposals to a database, file, or history store. Save any output you need before ending or refreshing the Streamlit session.
 
-- Client inputs and generated proposals are **not stored** on the server, in a database, or in cookies.
-- Data lives only in the current browser session and **is wiped on refresh**.
-- There is **no history** feature. Always copy or download the output `.txt` before leaving the page.
+## Development
 
-## How It Works
+Install the development dependencies from `requirements.txt`, then run:
 
-The app injects a Principal-Enterprise-Architect prompt (plus optional anti-buzzword humanizer rules) into the selected model and returns a proposal structured as:
-
-1. Problem Breakdown & Executive Summary
-2. Proposed Solution & AI Agent Architecture
-3. 4-Week Pilot Roadmap & Key Deliverables
-4. Why Our Company
-5. Next Steps
-
-## Project Structure
-
+```bash
+pytest
+ruff check .
 ```
+
+The test suite covers prompt construction, schema validation, WordSpinner detection and rewriting, DOCX generation, configuration, mocked LLM calls, and provider error handling. GitHub Actions runs the same commands on pushes and pull requests using Python 3.12.
+
+## Project structure
+
+```text
 ProposalForge/
-├── main.py            # Streamlit app entry point (env-driven API key)
-├── requirements.txt   # Python dependencies
-├── .env.example       # Environment variable reference
-├── env/               # Local Python virtual environment (not committed)
-└── README.md
+├── app.py                    # Streamlit UI
+├── main.py                   # Compatibility launcher
+├── config.py                 # Dotenv-backed settings
+├── prompts.py                # Proposal prompt construction
+├── llm_client.py             # Provider calls and error mapping
+├── proposal_schema.py        # Strict tool schema and parser
+├── proposal_pipeline.py      # Generation orchestration
+├── wordspinner.py            # Deterministic buzzword review
+├── export.py                 # Word document generation
+├── errors.py                 # User-facing application errors
+├── docs/ui-preview.svg       # Interface preview
+├── tests/                    # Pytest-compatible test suite
+├── .github/workflows/ci.yml  # CI lint and test workflow
+├── .env.example              # Safe configuration template
+├── LICENSE
+├── requirements.txt
+└── pyproject.toml
 ```
 
-## Notes
+## License
 
-- Requires an internet connection to reach the Gemini API.
-- The API key is read from `GEMINI_API_KEY` (env var or Streamlit secret) only; it is never stored on disk.
-- Gemini's free tier includes `gemini-3.5-flash`, `gemini-3.5-flash-lite`, and `gemini-2.5-flash` with a generous daily quota — effectively unlimited for proposal generation. If `MODELS` is not set, these defaults are shown in the dropdown.
+Released under the MIT License. See [`LICENSE`](LICENSE).
