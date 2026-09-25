@@ -2,7 +2,7 @@
 
 ProposalForge is a Streamlit workspace for turning client RFPs and email requests into structured enterprise proposals. It combines an OpenAI-compatible model request, a strict proposal schema, deterministic WordSpinner review, and formatted Word export.
 
-![Illustrative ProposalForge interface preview](docs/ui-preview.svg)
+![Illustrative ProposalForge interface preview](docs/ui-preview.png)
 
 ## What it does
 
